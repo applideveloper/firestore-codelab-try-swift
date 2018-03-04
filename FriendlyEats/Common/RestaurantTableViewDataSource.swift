@@ -21,51 +21,74 @@ import FirebaseFirestore
 /// with restaurant data from a Firestore query. Consumers should update the
 /// table view with new data from Firestore in the updateHandler closure.
 @objc class RestaurantTableViewDataSource: NSObject, UITableViewDataSource {
-
-  private var restaurants: [Restaurant] = []
-
-  public init(query: Query,
-              updateHandler: @escaping ([DocumentChange]) -> ()) {
-    fatalError("Unimplemented")
-  }
-
-
-  // Pull data from Firestore
-
-  /// Starts listening to the Firestore query and invoking the updateHandler.
-  public func startUpdates() {
-    fatalError("Unimplemented")
-  }
-
-  /// Stops listening to the Firestore query. updateHandler will not be called unless startListening
-  /// is called again.
-  public func stopUpdates() {
-    fatalError("Unimplemented")
-  }
-
-  /// Returns the restaurant at the given index.
-  subscript(index: Int) -> Restaurant {
-    return restaurants[index]
-  }
-
-  /// The number of items in the data source.
-  public var count: Int {
-    return restaurants.count
-  }
-
-  // MARK: - UITableViewDataSource
-
-  func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-    return count
-  }
-
-  func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-    let cell = tableView.dequeueReusableCell(withIdentifier: "RestaurantTableViewCell",
-                                             for: indexPath) as! RestaurantTableViewCell
-    let restaurant = restaurants[indexPath.row]
-    cell.populate(restaurant: restaurant)
-    return cell
-  }
-
+    
+    private var restaurants: [Restaurant] = []
+    private let query: Query
+    private var listener: ListenerRegistration?
+    private let updateHandler: ([DocumentChange]) -> ()
+    
+    
+    public init(query: Query,
+                updateHandler: @escaping ([DocumentChange]) -> ()) {
+        self.query = query
+        self.updateHandler = updateHandler
+    }
+    
+    // Pull data from Firestore
+    
+    /// Starts listening to the Firestore query and invoking the updateHandler.
+    public func startUpdates() {
+        guard listener == nil else { return }
+        listener = query.addSnapshotListener { [unowned self] querySnapshot, error in
+            guard let snapshot = querySnapshot else {
+                print("Error fetching snapshot results: \(error!)")
+                return
+            }
+            let models = snapshot.documents.map { (document) -> Restaurant in
+                if let model = Restaurant(document: document) {
+                    return model
+                } else {
+                    // handle error
+                    fatalError("Unable to initialize Restaurant with dictionary \(document.data())")
+                }
+            }
+            self.restaurants = models
+            self.updateHandler(snapshot.documentChanges)
+        }
+    }
+    
+    /// Stops listening to the Firestore query. updateHandler will not be called unless startListening
+    /// is called again.
+    public func stopUpdates() {
+        if let listener = listener {
+            listener.remove()
+        }
+        listener = nil
+    }
+    
+    /// Returns the restaurant at the given index.
+    subscript(index: Int) -> Restaurant {
+        return restaurants[index]
+    }
+    
+    /// The number of items in the data source.
+    public var count: Int {
+        return restaurants.count
+    }
+    
+    // MARK: - UITableViewDataSource
+    
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return count
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "RestaurantTableViewCell",
+                                                 for: indexPath) as! RestaurantTableViewCell
+        let restaurant = restaurants[indexPath.row]
+        cell.populate(restaurant: restaurant)
+        return cell
+    }
+    
 }
 

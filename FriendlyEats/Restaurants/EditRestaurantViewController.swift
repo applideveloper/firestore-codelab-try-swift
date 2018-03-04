@@ -91,8 +91,47 @@ class EditRestaurantViewController: UIViewController, UINavigationControllerDele
       data["photoURL"] = downloadUrl
     }
 
-
     // TODO: Update the restaurant document in Cloud Firestore
+    if let downloadUrl = downloadUrl {
+        data["photoURL"] = downloadUrl
+    }
+    
+    Firestore.firestore().collection("restaurants").document(restaurant.documentID).updateData(data) { err in
+        if let err = err {
+            print("Error writing document: \(err)")
+        } else {
+            print("Edit confirmed by the server.")
+        }
+        self.presentDidSaveAlert()
+    }
+    
+//    let restaurantToEdit = Firestore.firestore().collection("restaurants").document(restaurant.documentID)
+//    // Create the batchWrite object
+//    let batchWrite = Firestore.firestore().batch()
+//    batchWrite.updateData(data, forDocument: restaurantToEdit)
+//
+//    // And now, let's fix our denormalized data.
+//    Firestore.firestore().collection("reviews").whereField("restaurantID", isEqualTo: restaurant.documentID).getDocuments { (snapshot, error) in
+//        if let error = error {
+//            print("Received an error attempting to get reviews! \(error)")
+//            return
+//        }
+//        if let snapshot = snapshot {
+//            for reviewDoc in snapshot.documents {
+//                guard let name = data["name"] else { continue }
+//                batchWrite.updateData(["restaurantName": name], forDocument: reviewDoc.reference)
+//                print("Updating a review, too!")
+//            }
+//        }
+//
+//        batchWrite.commit(completion: { (error) in
+//            if let error = error {
+//                print("Error writing document: \(error)")
+//            } else {
+//                self.presentDidSaveAlert()
+//            }
+//        })
+//    }
   }
 
   // MARK: Setting up pickers

@@ -83,8 +83,15 @@ class AddRestaurantViewController: UIViewController, UINavigationControllerDeleg
     print("Going to save document data as \(restaurant.documentData)")
 
     // TODO: Save the restaurant document to Cloud Firestore
-
-    self.presentDidSaveAlert()
+    
+    Firestore.firestore().collection("restaurants").document()
+        .setData(restaurant.documentData) { err in
+            if let err = err {
+                print("Error writing document: \(err)")
+            } else {
+                self.presentDidSaveAlert()
+            }
+    }
   }
 
   // MARK: Setting up pickers
